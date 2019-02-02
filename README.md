@@ -5,13 +5,13 @@ PKI base on openssl
 Base path:  `pki-example/ca`
 
 ```bash
-mkdir -p pki-example/ca/{certs,crl,newcerts,private}
+mkdir -p pki-example/ca/{certs,crl,csr,newcerts,private}
 cp openssl.conf pki-example/ca/
 sed -i 's?CHANGE_THIS_PATH?'`pwd`'?' ./pki-example/ca/openssl.conf
 cd pki-example/ca/
 chmod 700 private
 touch index.txt
-echo 01 > serial
+echo 00 > serial
 ```
 
 CA folder structure and short description:
@@ -20,6 +20,7 @@ CA folder structure and short description:
 |
 |- certs        #
 |- crl          # folder for crl list
+|- csr           # folder for certificate request
 |- index.txt    # simple certificates database
 |- newcerts     #
 |- openssl.conf # config file for OpenSSL
@@ -74,4 +75,43 @@ The [openssl.conf](openssl.conf) includes all important OpenSSL settings to run 
 4.  Convert CA cert to DER format:
     ```bash
     openssl x509 -outform der -in certs/ca.pem -out certs/ca.der
+    ```
+## Generate server certificate and add it to web server
+
+By default [openssl.conf](openssl.conf) provide 2048 bit key during cert request. If you would like to generate 4096 key just add `4096` in the end of next command.
+
+1.  Generate server rsa key:
+    ```bash
+    openssl genrsa -out private/pki-example.local-key.pem
+    ```
+
+2.  Use private key to generate certificate request. It would be placed in [pki-example/ca/csr](pki-example/ca/csr):
+
+    ```bash
+    openssl req -config openssl.conf -key private/pki-example.local-key.pem  -new -sha256 -out csr/pki-example.local-csr.pem -subj "/C=PL/ST=LesserPoland/O=Example PKI/CN=pki-example.local"
+    ```
+
+3.  Below command displays CSR content:
+
+    ```bash
+    openssl req -in csr/pki-example.local-csr.pem -noout -text
+    ```
+4.  CSR allows to generate server certificate (you have to provide CA pass phase to encrypt ca key):
+
+    ```bash
+    openssl ca -config openssl.conf -extensions srv_cert -notext -md sha256 -in csr/pki-example.local-csr.pem -out certs/pki-example.local-cert.pem
+    ```
+5.  What was changed?:
+    * index.txt - has new entry:
+      ```bash
+      V	200202145727Z		00	unknown	/C=PL/ST=LesserPoland/O=Example PKI/CN=pki-example.local
+      ```
+    * serial was bumped to `01`
+    * server cert was signed: [ca/certs/pki-example.local-cert.pem](ca/certs/pki-example.local-cert.pem) below command would display cert content:
+    ```bash
+    openssl x509 -in certs/pki-example.local-cert.pem -noout -text
+    ```
+6.  New cert could be verified via command:
+    ```bash
+    openssl verify -CAfile certs/ca.pem certs/pki-example.local-cert.pem
     ```
