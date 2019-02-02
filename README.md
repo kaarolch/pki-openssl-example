@@ -102,12 +102,12 @@ By default [openssl.conf](openssl.conf) provide 2048 bit key during cert request
     openssl ca -config openssl.conf -extensions srv_cert -notext -md sha256 -in csr/pki-example.local-csr.pem -out certs/pki-example.local-cert.pem
     ```
 5.  What was changed?:
-    * index.txt - has new entry:
+    * index.txt has new entry:
       ```bash
       V	200202145727Z		00	unknown	/C=PL/ST=LesserPoland/O=Example PKI/CN=pki-example.local
       ```
     * serial was bumped to `01`
-    * server cert was signed: [ca/certs/pki-example.local-cert.pem](ca/certs/pki-example.local-cert.pem) below command would display cert content:
+    * server cert was signed: [certs/pki-example.local-cert.pem](certs/pki-example.local-cert.pem) below command would display cert content:
     ```bash
     openssl x509 -in certs/pki-example.local-cert.pem -noout -text
     ```
@@ -115,3 +115,9 @@ By default [openssl.conf](openssl.conf) provide 2048 bit key during cert request
     ```bash
     openssl verify -CAfile certs/ca.pem certs/pki-example.local-cert.pem
     ```
+7.  Now server cert [certs/pki-example.local-cert.pem](certs/pki-example.local-cert.pem), server key [private/pki-example.local-key.pem](private/pki-example.local-key.pem) and ca certificate [certs/ca.pem](certs/ca.pem) could be transfer to appropriate web server.
+8.  Generated cert could be converted to pkcs12 via command:
+    ```bash
+    openssl pkcs12 -export -out certs/pki-example.local-cert.pfx -inkey private/pki-example.local-key.pem -in certs/pki-example.local-cert.pem -certfile certs/ca.pem
+    ```
+    Above command is required a pass phase for pkcs12.  
